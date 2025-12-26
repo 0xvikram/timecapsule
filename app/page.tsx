@@ -1,5 +1,5 @@
-import TimeCapsuleApp from "./Components/TimeCapsuleApp";
+import LandingPage from "@/components/landing/LandingPage";
 
 export default function Page() {
-  return <TimeCapsuleApp />;
+  return <LandingPage />;
 }
