@@ -1,4 +1,4 @@
-import TimeCapsuleApp from "@/components/TimeCapsuleApp";
+import TimeCapsuleApp from "./Components/TimeCapsuleApp";
 
 export default function Page() {
   return <TimeCapsuleApp />;
