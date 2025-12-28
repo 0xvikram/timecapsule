@@ -100,6 +100,8 @@ export default function CapsulePage({
   const { id } = use(params);
   const [capsule, setCapsule] = useState<Capsule | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const cap = getCapsuleById(id);
@@ -142,8 +144,6 @@ export default function CapsulePage({
   }
 
   const unlocked = isUnlocked(capsule.unlockDate);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const getShareUrl = () => {
     if (typeof window !== "undefined") {
@@ -156,15 +156,25 @@ export default function CapsulePage({
     const url = getShareUrl();
     const goalsCount = capsule.goals?.length || 0;
     const unlockYear = new Date(capsule.unlockDate).getFullYear();
-    
+
     let tweetText = "";
     if (capsule.isPublic) {
-      tweetText = `🔒 I just locked my goals for ${unlockYear} in a TimeCapsule!\n\n"${capsule.title}"\n${goalsCount > 0 ? `\n📌 ${goalsCount} goal${goalsCount !== 1 ? "s" : ""} sealed until reveal day\n` : ""}\nCheck out my future intentions 👇\n${url}\n\n#TimeCapsule #Goals #FutureSelf`;
+      tweetText = `🔒 I just locked my goals for ${unlockYear} in a TimeCapsule!\n\n"${
+        capsule.title
+      }"\n${
+        goalsCount > 0
+          ? `\n📌 ${goalsCount} goal${
+              goalsCount !== 1 ? "s" : ""
+            } sealed until reveal day\n`
+          : ""
+      }\nCheck out my future intentions 👇\n${url}\n\n#TimeCapsule #Goals #FutureSelf`;
     } else {
       tweetText = `🔒 Just sealed my goals in a TimeCapsule for ${unlockYear}!\n\nLocking away "${capsule.title}" until the reveal date.\n\nCreate your own at TimeCapsule ⏳\n\n#TimeCapsule #Goals #FutureSelf`;
     }
-    
-    return `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+
+    return `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+      tweetText
+    )}`;
   };
 
   const copyToClipboard = async () => {
