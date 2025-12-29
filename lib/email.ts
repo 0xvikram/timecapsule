@@ -11,17 +11,30 @@ export interface EmailData {
 const createTransporter = () => {
   console.log("📧 [EMAIL] Creating transporter...");
   console.log("📧 [EMAIL] GMAIL_USER exists:", !!process.env.GMAIL_USER);
-  console.log("📧 [EMAIL] GMAIL_USER value:", process.env.GMAIL_USER || "NOT SET");
-  console.log("📧 [EMAIL] GMAIL_APP_PASSWORD exists:", !!process.env.GMAIL_APP_PASSWORD);
-  console.log("📧 [EMAIL] GMAIL_APP_PASSWORD length:", process.env.GMAIL_APP_PASSWORD?.length || 0);
+  console.log(
+    "📧 [EMAIL] GMAIL_USER value:",
+    process.env.GMAIL_USER || "NOT SET"
+  );
+  console.log(
+    "📧 [EMAIL] GMAIL_APP_PASSWORD exists:",
+    !!process.env.GMAIL_APP_PASSWORD
+  );
+  console.log(
+    "📧 [EMAIL] GMAIL_APP_PASSWORD length:",
+    process.env.GMAIL_APP_PASSWORD?.length || 0
+  );
 
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-    console.log("📧 [EMAIL] ❌ Missing credentials - cannot create transporter");
+    console.log(
+      "📧 [EMAIL] ❌ Missing credentials - cannot create transporter"
+    );
     return null;
   }
 
-  console.log("📧 [EMAIL] ✅ Credentials found, creating nodemailer transporter...");
-  
+  console.log(
+    "📧 [EMAIL] ✅ Credentials found, creating nodemailer transporter..."
+  );
+
   return nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -35,12 +48,14 @@ export async function sendEmail(data: EmailData): Promise<boolean> {
   console.log("📧 [EMAIL] ========== SEND EMAIL START ==========");
   console.log("📧 [EMAIL] To:", data.to);
   console.log("📧 [EMAIL] Subject:", data.subject);
-  
+
   const transporter = createTransporter();
-  
+
   if (!transporter) {
     console.log("📧 [EMAIL] ❌ No transporter - email service not configured");
-    console.log("📧 [EMAIL] Set GMAIL_USER and GMAIL_APP_PASSWORD environment variables");
+    console.log(
+      "📧 [EMAIL] Set GMAIL_USER and GMAIL_APP_PASSWORD environment variables"
+    );
     return false;
   }
 
@@ -66,12 +81,21 @@ export async function sendEmail(data: EmailData): Promise<boolean> {
   } catch (error: unknown) {
     console.log("📧 [EMAIL] ❌ Error sending email!");
     console.log("📧 [EMAIL] Error type:", typeof error);
-    console.log("📧 [EMAIL] Error name:", error instanceof Error ? error.name : "Unknown");
-    console.log("📧 [EMAIL] Error message:", error instanceof Error ? error.message : String(error));
+    console.log(
+      "📧 [EMAIL] Error name:",
+      error instanceof Error ? error.name : "Unknown"
+    );
+    console.log(
+      "📧 [EMAIL] Error message:",
+      error instanceof Error ? error.message : String(error)
+    );
     if (error instanceof Error && error.stack) {
       console.log("📧 [EMAIL] Stack trace:", error.stack);
     }
-    console.log("📧 [EMAIL] Full error:", JSON.stringify(error, Object.getOwnPropertyNames(error as object), 2));
+    console.log(
+      "📧 [EMAIL] Full error:",
+      JSON.stringify(error, Object.getOwnPropertyNames(error as object), 2)
+    );
     console.log("📧 [EMAIL] ========== SEND EMAIL END ==========");
     return false;
   }
