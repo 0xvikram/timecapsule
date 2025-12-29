@@ -1,5 +1,5 @@
-// Email utility for TimeCapsule
-// You can use Resend, Nodemailer, or any email service
+// Email utility for TimeCapsule using Gmail SMTP
+import nodemailer from "nodemailer";
 
 export interface EmailData {
   to: string;
@@ -7,37 +7,72 @@ export interface EmailData {
   html: string;
 }
 
+// Create Gmail SMTP transporter
+const createTransporter = () => {
+  console.log("📧 [EMAIL] Creating transporter...");
+  console.log("📧 [EMAIL] GMAIL_USER exists:", !!process.env.GMAIL_USER);
+  console.log("📧 [EMAIL] GMAIL_USER value:", process.env.GMAIL_USER || "NOT SET");
+  console.log("📧 [EMAIL] GMAIL_APP_PASSWORD exists:", !!process.env.GMAIL_APP_PASSWORD);
+  console.log("📧 [EMAIL] GMAIL_APP_PASSWORD length:", process.env.GMAIL_APP_PASSWORD?.length || 0);
+
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.log("📧 [EMAIL] ❌ Missing credentials - cannot create transporter");
+    return null;
+  }
+
+  console.log("📧 [EMAIL] ✅ Credentials found, creating nodemailer transporter...");
+  
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+};
+
 export async function sendEmail(data: EmailData): Promise<boolean> {
-  // Check if email service is configured
-  if (!process.env.RESEND_API_KEY) {
-    console.log("Email service not configured. Skipping email:", data.subject);
+  console.log("📧 [EMAIL] ========== SEND EMAIL START ==========");
+  console.log("📧 [EMAIL] To:", data.to);
+  console.log("📧 [EMAIL] Subject:", data.subject);
+  
+  const transporter = createTransporter();
+  
+  if (!transporter) {
+    console.log("📧 [EMAIL] ❌ No transporter - email service not configured");
+    console.log("📧 [EMAIL] Set GMAIL_USER and GMAIL_APP_PASSWORD environment variables");
     return false;
   }
 
   try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: process.env.EMAIL_FROM || "TimeCapsule <noreply@timecapsule.app>",
-        to: data.to,
-        subject: data.subject,
-        html: data.html,
-      }),
+    const fromName = process.env.EMAIL_FROM_NAME || "TimeCapsule";
+    const fromEmail = process.env.GMAIL_USER;
+
+    console.log("📧 [EMAIL] From:", `${fromName} <${fromEmail}>`);
+    console.log("📧 [EMAIL] Attempting to send via Gmail SMTP...");
+
+    const result = await transporter.sendMail({
+      from: `${fromName} <${fromEmail}>`,
+      to: data.to,
+      subject: data.subject,
+      html: data.html,
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error("Failed to send email:", error);
-      return false;
-    }
-
+    console.log("📧 [EMAIL] ✅ Email sent successfully!");
+    console.log("📧 [EMAIL] Message ID:", result.messageId);
+    console.log("📧 [EMAIL] Response:", result.response);
+    console.log("📧 [EMAIL] ========== SEND EMAIL END ==========");
     return true;
-  } catch (error) {
-    console.error("Error sending email:", error);
+  } catch (error: unknown) {
+    console.log("📧 [EMAIL] ❌ Error sending email!");
+    console.log("📧 [EMAIL] Error type:", typeof error);
+    console.log("📧 [EMAIL] Error name:", error instanceof Error ? error.name : "Unknown");
+    console.log("📧 [EMAIL] Error message:", error instanceof Error ? error.message : String(error));
+    if (error instanceof Error && error.stack) {
+      console.log("📧 [EMAIL] Stack trace:", error.stack);
+    }
+    console.log("📧 [EMAIL] Full error:", JSON.stringify(error, Object.getOwnPropertyNames(error as object), 2));
+    console.log("📧 [EMAIL] ========== SEND EMAIL END ==========");
     return false;
   }
 }
