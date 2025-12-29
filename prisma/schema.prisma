@@ -1,31 +1,65 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Note: For Prisma 7+, connection URLs should be in prisma.config.ts
-// For Prisma 5/6, use the datasource block below
+// Prisma schema file
+// https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "windows", "debian-openssl-3.0.x"]
 }
 
-// Uncomment when ready to connect to database
-// datasource db {
-//   provider = "postgresql"
-//   url      = env("DATABASE_URL")
-// }
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
 
-// For now, using localStorage. When database is ready:
-// 1. Uncomment the datasource block above
-// 2. Run: npx prisma migrate dev --name init
-// 3. Run: npx prisma generate
+// NextAuth.js required models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
 
 model User {
-  id        String    @id @default(cuid())
-  email     String?   @unique
-  username  String?   @unique
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  capsules  Capsule[]
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  capsules Capsule[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 model Capsule {
@@ -39,7 +73,8 @@ model Capsule {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  goals Goal[]
+  goals     Goal[]
+  reminders Reminder[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -50,6 +85,21 @@ model Goal {
   text         String
   expectedDate String // Format: YYYY-MM
   status       String @default("pending") // pending | in-progress | completed
+
+  capsuleId String
+  capsule   Capsule @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Reminder {
+  id         String    @id @default(cuid())
+  type       String // "on_unlock" | "week_before" | "month_before" | "custom" | "recurring_monthly"
+  customDays Int? // For custom: days before unlock to remind
+  enabled    Boolean   @default(true)
+  lastSent   DateTime? // Track when last reminder was sent
+  nextSend   DateTime? // When to send next reminder
 
   capsuleId String
   capsule   Capsule @relation(fields: [capsuleId], references: [id], onDelete: Cascade)

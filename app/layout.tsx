@@ -1,4 +1,5 @@
 import "./globals.css";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 
 export const metadata = {
   title: "TimeCapsule",
@@ -12,7 +13,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-black text-white">{children}</body>
+      <body className="bg-black text-white">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

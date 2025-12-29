@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   X,
   ArrowRight,
@@ -18,11 +19,36 @@ import {
 } from "lucide-react";
 import { Navbar, BackgroundEffect } from "@/components/shared";
 import { STYLES } from "@/lib/constants";
-import { saveCapsule } from "@/lib/capsule-store";
 import { CapsuleFormData, Goal } from "@/lib/types";
 
 export default function CreatePage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
+
+  // Protect route - redirect to auth if not logged in
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth");
+    }
+  }, [status, router]);
+
+  // Show loading while checking auth
+  if (status === "loading") {
+    return (
+      <div className={`min-h-screen ${STYLES.bg} text-white flex items-center justify-center`}>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-8 h-8 border-4 border-yellow-400 border-t-transparent rounded-full"
+        />
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated
+  if (status === "unauthenticated") {
+    return null;
+  }
   const [formData, setFormData] = useState<CapsuleFormData>({
     title: "",
     description: "",
@@ -60,19 +86,40 @@ export default function CreatePage() {
     });
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
-    const newCapsule = {
-      ...formData,
-      id: `local-${Date.now()}`,
-      userId: "local-explorer",
-      createdAt: new Date().toISOString(),
-      status: "locked" as const,
-    };
+    try {
+      const response = await fetch("/api/capsules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          unlockDate: formData.unlockDate,
+          isPublic: formData.isPublic,
+          goals: formData.goals.map((g) => ({
+            text: g.text,
+            expectedDate: g.expectedDate,
+            status: g.status,
+          })),
+        }),
+      });
 
-    saveCapsule(newCapsule);
-    router.push("/explore");
+      if (!response.ok) {
+        throw new Error("Failed to create capsule");
+      }
+
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Error creating capsule:", error);
+      alert("Failed to create capsule. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Format date for display (YYYY-MM to Month Year)

@@ -6,7 +6,6 @@ import Link from "next/link";
 import { Layers, ArrowRight, Lock, Unlock, Target } from "lucide-react";
 import { Navbar, BackgroundEffect } from "@/components/shared";
 import { STYLES } from "@/lib/constants";
-import { getCapsules } from "@/lib/capsule-store";
 import { getCountdown, isUnlocked } from "@/lib/utils";
 import { Capsule } from "@/lib/types";
 
@@ -44,9 +43,18 @@ export default function ExplorePage() {
   const [capsules, setCapsules] = useState<Capsule[]>([]);
   const [filter, setFilter] = useState<"latest" | "trending">("latest");
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    const data = getCapsules().filter((c) => c.isPublic);
-    setCapsules(data);
+    fetch("/api/capsules?type=public")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setCapsules(data);
+        }
+      })
+      .catch((err) => console.error("Failed to fetch capsules:", err))
+      .finally(() => setLoading(false));
   }, []);
 
   return (

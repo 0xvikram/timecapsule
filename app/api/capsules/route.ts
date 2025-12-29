@@ -1,26 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
-// import prisma from "@/lib/prisma"; // Uncomment when database is connected
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
-// Temporary: Use localStorage bridge until database is set up
-// This allows the API to work without a database connection
-
+// GET: Fetch capsules (public or user's own)
 export async function GET(request: NextRequest) {
   try {
-    // When database is connected, use this:
-    // const capsules = await prisma.capsule.findMany({
-    //   where: { isPublic: true },
-    //   orderBy: { createdAt: "desc" },
-    //   include: {
-    //     user: { select: { username: true } },
-    //     goals: true,
-    //   },
-    // });
+    const session = await getServerSession(authOptions);
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get("type"); // "public" | "user"
 
-    // For now, return a message indicating API is ready
-    return NextResponse.json({
-      message: "API ready. Connect database to enable.",
-      capsules: [],
+    let whereClause: object = {};
+
+    if (type === "public") {
+      // Public capsules for explore page
+      whereClause = { isPublic: true };
+    } else if (type === "user" && session?.user?.id) {
+      // User's own capsules for dashboard
+      whereClause = { userId: session.user.id };
+    } else if (session?.user?.id) {
+      // Default: user's own capsules
+      whereClause = { userId: session.user.id };
+    } else {
+      // Not logged in, only show public
+      whereClause = { isPublic: true };
+    }
+
+    const capsules = await prisma.capsule.findMany({
+      where: whereClause,
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: { select: { name: true, image: true } },
+        goals: true,
+      },
     });
+
+    // Transform to match frontend types
+    const transformedCapsules = capsules.map((c) => ({
+      id: c.id,
+      title: c.title,
+      description: c.description,
+      unlockDate: c.unlockDate.toISOString(),
+      isPublic: c.isPublic,
+      status: c.status,
+      userId: c.userId,
+      createdAt: c.createdAt.toISOString(),
+      goals: c.goals.map((g) => ({
+        id: g.id,
+        text: g.text,
+        expectedDate: g.expectedDate,
+        status: g.status,
+      })),
+      user: c.user,
+    }));
+
+    return NextResponse.json(transformedCapsules);
   } catch (error) {
     console.error("Error fetching capsules:", error);
     return NextResponse.json(
@@ -30,10 +64,20 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// POST: Create a new capsule
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "You must be logged in to create a capsule" },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
-    const { title, description, unlockDate, isPublic, goals, userId } = body;
+    const { title, description, unlockDate, isPublic, goals } = body;
 
     // Validate required fields
     if (!title || !description || !unlockDate) {
@@ -43,41 +87,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // When database is connected, use this:
-    // const capsule = await prisma.capsule.create({
-    //   data: {
-    //     title,
-    //     description,
-    //     unlockDate: new Date(unlockDate),
-    //     isPublic: isPublic ?? true,
-    //     userId,
-    //     goals: goals
-    //       ? {
-    //           create: goals.map((g: any) => ({
-    //             text: g.text,
-    //             expectedDate: g.expectedDate,
-    //             status: g.status || "pending",
-    //           })),
-    //         }
-    //       : undefined,
-    //   },
-    //   include: { goals: true },
-    // });
+    const capsule = await prisma.capsule.create({
+      data: {
+        title,
+        description,
+        unlockDate: new Date(unlockDate),
+        isPublic: isPublic ?? true,
+        userId: session.user.id,
+        status: "locked",
+        goals: goals?.length
+          ? {
+              create: goals.map((g: { text: string; expectedDate: string; status?: string }) => ({
+                text: g.text,
+                expectedDate: g.expectedDate,
+                status: g.status || "pending",
+              })),
+            }
+          : undefined,
+      },
+      include: { goals: true },
+    });
 
-    // For now, return success with mock ID
-    const capsule = {
-      id: `api-${Date.now()}`,
-      title,
-      description,
-      unlockDate,
-      isPublic: isPublic ?? true,
-      userId: userId || "anonymous",
-      goals: goals || [],
-      createdAt: new Date().toISOString(),
-      status: "locked",
-    };
-
-    return NextResponse.json(capsule, { status: 201 });
+    return NextResponse.json(
+      {
+        id: capsule.id,
+        title: capsule.title,
+        description: capsule.description,
+        unlockDate: capsule.unlockDate.toISOString(),
+        isPublic: capsule.isPublic,
+        status: capsule.status,
+        userId: capsule.userId,
+        createdAt: capsule.createdAt.toISOString(),
+        goals: capsule.goals,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Error creating capsule:", error);
     return NextResponse.json(

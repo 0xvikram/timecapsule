@@ -21,7 +21,6 @@ import {
   CapsuleLockAnimation,
 } from "@/components/shared";
 import { STYLES } from "@/lib/constants";
-import { getCapsuleById } from "@/lib/capsule-store";
 import { getCountdown, isUnlocked, formatDate } from "@/lib/utils";
 import { Capsule, Goal } from "@/lib/types";
 
@@ -104,11 +103,18 @@ export default function CapsulePage({
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const cap = getCapsuleById(id);
-    if (cap) {
-      setCapsule(cap);
-    }
-    setLoading(false);
+    fetch(`/api/capsules/${id}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch");
+        return res.json();
+      })
+      .then((data) => {
+        if (data && !data.error) {
+          setCapsule(data);
+        }
+      })
+      .catch((err) => console.error("Failed to fetch capsule:", err))
+      .finally(() => setLoading(false));
   }, [id]);
 
   if (loading) {

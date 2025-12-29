@@ -22,9 +22,12 @@ const FloatingCapsuleNode = ({
   isYellow,
   delay = 0,
 }: FloatingCapsuleNodeProps) => {
-  const [countdown, setCountdown] = useState(getCountdown(new Date(time)));
+  const [countdown, setCountdown] = useState<string>("");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+    setCountdown(getCountdown(new Date(time)));
     const timer = setInterval(() => {
       setCountdown(getCountdown(new Date(time)));
     }, 1000);
@@ -71,7 +74,9 @@ const FloatingCapsuleNode = ({
           <span className="text-[8px] font-black uppercase opacity-40 tracking-[0.2em] text-white">
             Locking for
           </span>
-          <span className="text-sm font-mono font-black">{countdown}</span>
+          <span className="text-sm font-mono font-black">
+            {mounted ? countdown : "..."}
+          </span>
         </div>
       </motion.div>
     </motion.div>
