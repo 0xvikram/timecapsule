@@ -352,8 +352,14 @@ export default function CapsulePage({
                   <span className="block text-[10px] font-black uppercase text-white/30 tracking-widest mb-4">
                     Created By
                   </span>
-                  <span className="text-2xl font-black font-mono text-yellow-400 block truncate" title={capsule.user?.name || capsule.userId}>
-                    @{capsule.user?.name || capsule.userId.substring(0, 12)}{capsule.userId.length > 12 && !capsule.user?.name ? "..." : ""}
+                  <span
+                    className="text-2xl font-black font-mono text-yellow-400 block truncate"
+                    title={capsule.user?.name || capsule.userId}
+                  >
+                    @{capsule.user?.name || capsule.userId.substring(0, 12)}
+                    {capsule.userId.length > 12 && !capsule.user?.name
+                      ? "..."
+                      : ""}
                   </span>
                 </div>
               </div>

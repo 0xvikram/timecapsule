@@ -59,14 +59,16 @@ export async function GET(request: NextRequest) {
       })),
       user: c.user,
       likeCount: c._count.likes,
-      likedByMe: session?.user?.id 
+      likedByMe: session?.user?.id
         ? c.likes.some((like) => like.userId === session.user.id)
         : false,
     }));
 
     // Sort by trending (most likes) if requested
     if (sort === "trending") {
-      transformedCapsules = transformedCapsules.sort((a, b) => b.likeCount - a.likeCount);
+      transformedCapsules = transformedCapsules.sort(
+        (a, b) => b.likeCount - a.likeCount
+      );
     }
 
     return NextResponse.json(transformedCapsules);
@@ -92,7 +94,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, unlockDate, isPublic, goals, reminder, sendCreationEmail } = body;
+    const {
+      title,
+      description,
+      unlockDate,
+      isPublic,
+      goals,
+      reminder,
+      sendCreationEmail,
+    } = body;
 
     // Validate required fields
     if (!title || !description || !unlockDate) {
@@ -107,14 +117,16 @@ export async function POST(request: NextRequest) {
     if (reminder && reminder.enabled) {
       const unlock = new Date(unlockDate);
       let daysBeforeUnlock = 30; // Default: month before
-      
+
       if (reminder.type === "week_before") {
         daysBeforeUnlock = 7;
       } else if (reminder.type === "custom" && reminder.customDays) {
         daysBeforeUnlock = reminder.customDays;
       }
-      
-      reminderNextSend = new Date(unlock.getTime() - daysBeforeUnlock * 24 * 60 * 60 * 1000);
+
+      reminderNextSend = new Date(
+        unlock.getTime() - daysBeforeUnlock * 24 * 60 * 60 * 1000
+      );
     }
 
     const capsule = await prisma.capsule.create({
@@ -127,11 +139,17 @@ export async function POST(request: NextRequest) {
         status: "locked",
         goals: goals?.length
           ? {
-              create: goals.map((g: { text: string; expectedDate: string; status?: string }) => ({
-                text: g.text,
-                expectedDate: g.expectedDate,
-                status: g.status || "pending",
-              })),
+              create: goals.map(
+                (g: {
+                  text: string;
+                  expectedDate: string;
+                  status?: string;
+                }) => ({
+                  text: g.text,
+                  expectedDate: g.expectedDate,
+                  status: g.status || "pending",
+                })
+              ),
             }
           : undefined,
         reminders: reminder?.enabled
@@ -152,7 +170,7 @@ export async function POST(request: NextRequest) {
     if (sendCreationEmail && session.user.email) {
       const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
       const capsuleUrl = `${baseUrl}/capsule/${capsule.id}`;
-      
+
       const emailData = generateCapsuleCreatedEmail({
         userName: session.user.name || "Time Traveler",
         capsuleTitle: capsule.title,
@@ -160,11 +178,11 @@ export async function POST(request: NextRequest) {
         capsuleUrl,
         isPublic: capsule.isPublic,
       });
-      
+
       emailData.to = session.user.email;
-      
+
       // Send email in background (don't await)
-      sendEmail(emailData).catch((err) => 
+      sendEmail(emailData).catch((err) =>
         console.error("Failed to send creation email:", err)
       );
     }

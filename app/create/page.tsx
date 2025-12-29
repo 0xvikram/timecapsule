@@ -37,7 +37,9 @@ export default function CreatePage() {
   // Show loading while checking auth
   if (status === "loading") {
     return (
-      <div className={`min-h-screen ${STYLES.bg} text-white flex items-center justify-center`}>
+      <div
+        className={`min-h-screen ${STYLES.bg} text-white flex items-center justify-center`}
+      >
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -61,7 +63,9 @@ export default function CreatePage() {
 
   // Reminder settings
   const [sendCreationEmail, setSendCreationEmail] = useState(true);
-  const [reminderType, setReminderType] = useState<"none" | "month_before" | "week_before" | "custom">("month_before");
+  const [reminderType, setReminderType] = useState<
+    "none" | "month_before" | "week_before" | "custom"
+  >("month_before");
   const [customDays, setCustomDays] = useState(7);
 
   // Goal input state
@@ -101,11 +105,14 @@ export default function CreatePage() {
 
     try {
       // Build reminder data if reminder is enabled
-      const reminderData = reminderType !== "none" ? {
-        type: reminderType,
-        customDays: reminderType === "custom" ? customDays : undefined,
-        enabled: true,
-      } : undefined;
+      const reminderData =
+        reminderType !== "none"
+          ? {
+              type: reminderType,
+              customDays: reminderType === "custom" ? customDays : undefined,
+              enabled: true,
+            }
+          : undefined;
 
       const response = await fetch("/api/capsules", {
         method: "POST",
@@ -273,7 +280,7 @@ export default function CreatePage() {
               <label className="text-xs font-black uppercase tracking-[0.4em] text-yellow-400 flex items-center gap-2">
                 <Mail size={14} /> Email Notifications
               </label>
-              
+
               {/* Creation Email Toggle */}
               <div className="bg-white/5 border-2 border-white/10 rounded-[40px] p-6">
                 <div className="flex items-center justify-between">
@@ -283,15 +290,23 @@ export default function CreatePage() {
                     </div>
                     <div>
                       <p className="font-bold text-lg">Confirmation Email</p>
-                      <p className="text-white/40 text-sm">Receive email when capsule is created</p>
+                      <p className="text-white/40 text-sm">
+                        Receive email when capsule is created
+                      </p>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => setSendCreationEmail(!sendCreationEmail)}
-                    className={`w-14 h-8 rounded-full transition-all ${sendCreationEmail ? 'bg-green-400' : 'bg-white/20'}`}
+                    className={`w-14 h-8 rounded-full transition-all ${
+                      sendCreationEmail ? "bg-green-400" : "bg-white/20"
+                    }`}
                   >
-                    <div className={`w-6 h-6 rounded-full bg-white shadow-lg transform transition-transform ${sendCreationEmail ? 'translate-x-7' : 'translate-x-1'}`} />
+                    <div
+                      className={`w-6 h-6 rounded-full bg-white shadow-lg transform transition-transform ${
+                        sendCreationEmail ? "translate-x-7" : "translate-x-1"
+                      }`}
+                    />
                   </button>
                 </div>
               </div>
@@ -304,36 +319,54 @@ export default function CreatePage() {
                   </div>
                   <div>
                     <p className="font-bold text-lg">Unlock Reminders</p>
-                    <p className="text-white/40 text-sm">Get notified before your capsule unlocks</p>
+                    <p className="text-white/40 text-sm">
+                      Get notified before your capsule unlocks
+                    </p>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <button
                     type="button"
                     onClick={() => setReminderType("none")}
-                    className={`py-4 px-4 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${reminderType === "none" ? "bg-white/20 text-white border-2 border-white/30" : "bg-white/5 text-white/40 border-2 border-transparent hover:text-white"}`}
+                    className={`py-4 px-4 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                      reminderType === "none"
+                        ? "bg-white/20 text-white border-2 border-white/30"
+                        : "bg-white/5 text-white/40 border-2 border-transparent hover:text-white"
+                    }`}
                   >
                     No Reminder
                   </button>
                   <button
                     type="button"
                     onClick={() => setReminderType("month_before")}
-                    className={`py-4 px-4 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${reminderType === "month_before" ? "bg-yellow-400 text-black border-2 border-yellow-400" : "bg-white/5 text-white/40 border-2 border-transparent hover:text-white"}`}
+                    className={`py-4 px-4 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                      reminderType === "month_before"
+                        ? "bg-yellow-400 text-black border-2 border-yellow-400"
+                        : "bg-white/5 text-white/40 border-2 border-transparent hover:text-white"
+                    }`}
                   >
                     1 Month Before
                   </button>
                   <button
                     type="button"
                     onClick={() => setReminderType("week_before")}
-                    className={`py-4 px-4 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${reminderType === "week_before" ? "bg-yellow-400 text-black border-2 border-yellow-400" : "bg-white/5 text-white/40 border-2 border-transparent hover:text-white"}`}
+                    className={`py-4 px-4 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                      reminderType === "week_before"
+                        ? "bg-yellow-400 text-black border-2 border-yellow-400"
+                        : "bg-white/5 text-white/40 border-2 border-transparent hover:text-white"
+                    }`}
                   >
                     1 Week Before
                   </button>
                   <button
                     type="button"
                     onClick={() => setReminderType("custom")}
-                    className={`py-4 px-4 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${reminderType === "custom" ? "bg-yellow-400 text-black border-2 border-yellow-400" : "bg-white/5 text-white/40 border-2 border-transparent hover:text-white"}`}
+                    className={`py-4 px-4 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${
+                      reminderType === "custom"
+                        ? "bg-yellow-400 text-black border-2 border-yellow-400"
+                        : "bg-white/5 text-white/40 border-2 border-transparent hover:text-white"
+                    }`}
                   >
                     Custom
                   </button>
@@ -351,7 +384,9 @@ export default function CreatePage() {
                       min="1"
                       max="365"
                       value={customDays}
-                      onChange={(e) => setCustomDays(parseInt(e.target.value) || 7)}
+                      onChange={(e) =>
+                        setCustomDays(parseInt(e.target.value) || 7)
+                      }
                       className="w-20 bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-center font-bold outline-none focus:border-yellow-400"
                     />
                     <span className="text-white/60">days before unlock</span>
@@ -463,7 +498,11 @@ export default function CreatePage() {
                 <>
                   <motion.div
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
                     className="w-10 h-10 border-4 border-black border-t-transparent rounded-full"
                   />
                   SEALING...

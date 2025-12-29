@@ -84,14 +84,14 @@ model Capsule {
 
 // Track who liked which capsule (prevents duplicate likes)
 model CapsuleLike {
-  id        String   @id @default(cuid())
-  
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   capsuleId String
-  capsule   Capsule  @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
-  
+  capsule   Capsule @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
 
   @@unique([userId, capsuleId]) // One like per user per capsule

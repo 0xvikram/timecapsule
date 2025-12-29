@@ -139,7 +139,9 @@ export default function DashboardPage() {
                   <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter">
                     {session?.user?.name?.split(" ")[0]}&apos;s Vault
                   </h1>
-                  <p className="text-white/40 text-sm">{session?.user?.email}</p>
+                  <p className="text-white/40 text-sm">
+                    {session?.user?.email}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-6">

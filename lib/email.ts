@@ -50,7 +50,7 @@ export function generateCapsuleCreatedEmail(params: {
   isPublic: boolean;
 }): EmailData {
   const { userName, capsuleTitle, unlockDate, capsuleUrl, isPublic } = params;
-  
+
   const formattedDate = new Date(unlockDate).toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
@@ -115,7 +115,9 @@ export function generateCapsuleCreatedEmail(params: {
             <p style="color: #666; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 4px 0;">
               Visibility
             </p>
-            <p style="color: ${isPublic ? "#22c55e" : "#facc15"}; font-size: 14px; font-weight: 700; margin: 0;">
+            <p style="color: ${
+              isPublic ? "#22c55e" : "#facc15"
+            }; font-size: 14px; font-weight: 700; margin: 0;">
               ${isPublic ? "🌍 Public" : "🔐 Private"}
             </p>
           </div>
@@ -154,7 +156,7 @@ export function generateReminderEmail(params: {
   daysLeft: number;
 }): EmailData {
   const { userName, capsuleTitle, unlockDate, capsuleUrl, daysLeft } = params;
-  
+
   const formattedDate = new Date(unlockDate).toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
@@ -164,7 +166,9 @@ export function generateReminderEmail(params: {
 
   return {
     to: "", // Will be set by caller
-    subject: `⏰ ${daysLeft} day${daysLeft !== 1 ? "s" : ""} until "${capsuleTitle}" unlocks!`,
+    subject: `⏰ ${daysLeft} day${
+      daysLeft !== 1 ? "s" : ""
+    } until "${capsuleTitle}" unlocks!`,
     html: `
 <!DOCTYPE html>
 <html>
