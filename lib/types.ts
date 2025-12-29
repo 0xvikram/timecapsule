@@ -9,6 +9,10 @@ export interface Capsule {
   status?: "locked" | "unlocked";
   goals?: Goal[];
   reminders?: Reminder[];
+  user?: {
+    name?: string | null;
+    image?: string | null;
+  };
 }
 
 export interface Goal {

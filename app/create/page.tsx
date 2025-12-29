@@ -16,6 +16,8 @@ import {
   Target,
   Trash2,
   Calendar,
+  Mail,
+  Bell,
 } from "lucide-react";
 import { Navbar, BackgroundEffect } from "@/components/shared";
 import { STYLES } from "@/lib/constants";
@@ -57,6 +59,11 @@ export default function CreatePage() {
     goals: [],
   });
 
+  // Reminder settings
+  const [sendCreationEmail, setSendCreationEmail] = useState(true);
+  const [reminderType, setReminderType] = useState<"none" | "month_before" | "week_before" | "custom">("month_before");
+  const [customDays, setCustomDays] = useState(7);
+
   // Goal input state
   const [newGoalText, setNewGoalText] = useState("");
   const [newGoalDate, setNewGoalDate] = useState("");
@@ -93,6 +100,13 @@ export default function CreatePage() {
     setIsSubmitting(true);
 
     try {
+      // Build reminder data if reminder is enabled
+      const reminderData = reminderType !== "none" ? {
+        type: reminderType,
+        customDays: reminderType === "custom" ? customDays : undefined,
+        enabled: true,
+      } : undefined;
+
       const response = await fetch("/api/capsules", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -106,6 +120,8 @@ export default function CreatePage() {
             expectedDate: g.expectedDate,
             status: g.status,
           })),
+          reminder: reminderData,
+          sendCreationEmail,
         }),
       });
 
@@ -252,6 +268,98 @@ export default function CreatePage() {
               </div>
             </div>
 
+            {/* Email Reminder Settings */}
+            <div className="space-y-6">
+              <label className="text-xs font-black uppercase tracking-[0.4em] text-yellow-400 flex items-center gap-2">
+                <Mail size={14} /> Email Notifications
+              </label>
+              
+              {/* Creation Email Toggle */}
+              <div className="bg-white/5 border-2 border-white/10 rounded-[40px] p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-green-400/20 flex items-center justify-center">
+                      <Mail className="text-green-400" size={20} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-lg">Confirmation Email</p>
+                      <p className="text-white/40 text-sm">Receive email when capsule is created</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSendCreationEmail(!sendCreationEmail)}
+                    className={`w-14 h-8 rounded-full transition-all ${sendCreationEmail ? 'bg-green-400' : 'bg-white/20'}`}
+                  >
+                    <div className={`w-6 h-6 rounded-full bg-white shadow-lg transform transition-transform ${sendCreationEmail ? 'translate-x-7' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Reminder Options */}
+              <div className="bg-white/5 border-2 border-white/10 rounded-[40px] p-6 space-y-4">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-yellow-400/20 flex items-center justify-center">
+                    <Bell className="text-yellow-400" size={20} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-lg">Unlock Reminders</p>
+                    <p className="text-white/40 text-sm">Get notified before your capsule unlocks</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setReminderType("none")}
+                    className={`py-4 px-4 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${reminderType === "none" ? "bg-white/20 text-white border-2 border-white/30" : "bg-white/5 text-white/40 border-2 border-transparent hover:text-white"}`}
+                  >
+                    No Reminder
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReminderType("month_before")}
+                    className={`py-4 px-4 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${reminderType === "month_before" ? "bg-yellow-400 text-black border-2 border-yellow-400" : "bg-white/5 text-white/40 border-2 border-transparent hover:text-white"}`}
+                  >
+                    1 Month Before
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReminderType("week_before")}
+                    className={`py-4 px-4 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${reminderType === "week_before" ? "bg-yellow-400 text-black border-2 border-yellow-400" : "bg-white/5 text-white/40 border-2 border-transparent hover:text-white"}`}
+                  >
+                    1 Week Before
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReminderType("custom")}
+                    className={`py-4 px-4 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${reminderType === "custom" ? "bg-yellow-400 text-black border-2 border-yellow-400" : "bg-white/5 text-white/40 border-2 border-transparent hover:text-white"}`}
+                  >
+                    Custom
+                  </button>
+                </div>
+
+                {reminderType === "custom" && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="flex items-center gap-4 pt-4"
+                  >
+                    <span className="text-white/60">Remind me</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="365"
+                      value={customDays}
+                      onChange={(e) => setCustomDays(parseInt(e.target.value) || 7)}
+                      className="w-20 bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-center font-bold outline-none focus:border-yellow-400"
+                    />
+                    <span className="text-white/60">days before unlock</span>
+                  </motion.div>
+                )}
+              </div>
+            </div>
+
             {/* Goals Section */}
             <div className="space-y-6">
               <label className="text-xs font-black uppercase tracking-[0.4em] text-yellow-400 flex items-center gap-2">
@@ -348,13 +456,27 @@ export default function CreatePage() {
 
             <button
               type="submit"
-              className={`w-full py-10 rounded-[60px] ${STYLES.yellowBtn} text-4xl italic tracking-tighter mt-12 flex items-center justify-center gap-6 group`}
+              disabled={isSubmitting}
+              className={`w-full py-10 rounded-[60px] ${STYLES.yellowBtn} text-4xl italic tracking-tighter mt-12 flex items-center justify-center gap-6 group disabled:opacity-70 disabled:cursor-not-allowed`}
             >
-              SEAL TRANSMISSION{" "}
-              <ArrowRight
-                className="group-hover:translate-x-4 transition-transform"
-                size={40}
-              />
+              {isSubmitting ? (
+                <>
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="w-10 h-10 border-4 border-black border-t-transparent rounded-full"
+                  />
+                  SEALING...
+                </>
+              ) : (
+                <>
+                  SEAL TRANSMISSION{" "}
+                  <ArrowRight
+                    className="group-hover:translate-x-4 transition-transform"
+                    size={40}
+                  />
+                </>
+              )}
             </button>
           </form>
         </motion.div>

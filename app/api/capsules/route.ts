@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { sendEmail, generateCapsuleCreatedEmail } from "@/lib/email";
 
 // GET: Fetch capsules (public or user's own)
 export async function GET(request: NextRequest) {
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, unlockDate, isPublic, goals } = body;
+    const { title, description, unlockDate, isPublic, goals, reminder, sendCreationEmail } = body;
 
     // Validate required fields
     if (!title || !description || !unlockDate) {
@@ -85,6 +86,21 @@ export async function POST(request: NextRequest) {
         { error: "Missing required fields: title, description, unlockDate" },
         { status: 400 }
       );
+    }
+
+    // Calculate reminder next send date if reminder is provided
+    let reminderNextSend: Date | undefined;
+    if (reminder && reminder.enabled) {
+      const unlock = new Date(unlockDate);
+      let daysBeforeUnlock = 30; // Default: month before
+      
+      if (reminder.type === "week_before") {
+        daysBeforeUnlock = 7;
+      } else if (reminder.type === "custom" && reminder.customDays) {
+        daysBeforeUnlock = reminder.customDays;
+      }
+      
+      reminderNextSend = new Date(unlock.getTime() - daysBeforeUnlock * 24 * 60 * 60 * 1000);
     }
 
     const capsule = await prisma.capsule.create({
@@ -104,9 +120,40 @@ export async function POST(request: NextRequest) {
               })),
             }
           : undefined,
+        reminders: reminder?.enabled
+          ? {
+              create: {
+                type: reminder.type,
+                customDays: reminder.customDays,
+                enabled: true,
+                nextSend: reminderNextSend,
+              },
+            }
+          : undefined,
       },
-      include: { goals: true },
+      include: { goals: true, reminders: true },
     });
+
+    // Send creation confirmation email
+    if (sendCreationEmail && session.user.email) {
+      const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+      const capsuleUrl = `${baseUrl}/capsule/${capsule.id}`;
+      
+      const emailData = generateCapsuleCreatedEmail({
+        userName: session.user.name || "Time Traveler",
+        capsuleTitle: capsule.title,
+        unlockDate: capsule.unlockDate.toISOString(),
+        capsuleUrl,
+        isPublic: capsule.isPublic,
+      });
+      
+      emailData.to = session.user.email;
+      
+      // Send email in background (don't await)
+      sendEmail(emailData).catch((err) => 
+        console.error("Failed to send creation email:", err)
+      );
+    }
 
     return NextResponse.json(
       {
@@ -119,6 +166,7 @@ export async function POST(request: NextRequest) {
         userId: capsule.userId,
         createdAt: capsule.createdAt.toISOString(),
         goals: capsule.goals,
+        reminders: capsule.reminders,
       },
       { status: 201 }
     );

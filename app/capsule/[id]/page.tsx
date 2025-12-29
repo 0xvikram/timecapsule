@@ -348,12 +348,12 @@ export default function CapsulePage({
                     {formatDate(capsule.createdAt)}
                   </span>
                 </div>
-                <div className="p-8 bg-white/5 rounded-3xl border border-white/5">
+                <div className="p-8 bg-white/5 rounded-3xl border border-white/5 overflow-hidden">
                   <span className="block text-[10px] font-black uppercase text-white/30 tracking-widest mb-4">
                     Created By
                   </span>
-                  <span className="text-2xl font-black font-mono text-yellow-400">
-                    @{capsule.userId.replace("local-", "")}
+                  <span className="text-2xl font-black font-mono text-yellow-400 block truncate" title={capsule.user?.name || capsule.userId}>
+                    @{capsule.user?.name || capsule.userId.substring(0, 12)}{capsule.userId.length > 12 && !capsule.user?.name ? "..." : ""}
                   </span>
                 </div>
               </div>
