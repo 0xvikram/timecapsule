@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type"); // "public" | "user"
+    const sort = searchParams.get("sort"); // "latest" | "trending"
 
     let whereClause: object = {};
 
@@ -33,11 +34,15 @@ export async function GET(request: NextRequest) {
       include: {
         user: { select: { name: true, image: true } },
         goals: true,
+        likes: true,
+        _count: {
+          select: { likes: true },
+        },
       },
     });
 
     // Transform to match frontend types
-    const transformedCapsules = capsules.map((c) => ({
+    let transformedCapsules = capsules.map((c) => ({
       id: c.id,
       title: c.title,
       description: c.description,
@@ -53,7 +58,16 @@ export async function GET(request: NextRequest) {
         status: g.status,
       })),
       user: c.user,
+      likeCount: c._count.likes,
+      likedByMe: session?.user?.id 
+        ? c.likes.some((like) => like.userId === session.user.id)
+        : false,
     }));
+
+    // Sort by trending (most likes) if requested
+    if (sort === "trending") {
+      transformedCapsules = transformedCapsules.sort((a, b) => b.likeCount - a.likeCount);
+    }
 
     return NextResponse.json(transformedCapsules);
   } catch (error) {

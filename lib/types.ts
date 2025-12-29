@@ -13,6 +13,8 @@ export interface Capsule {
     name?: string | null;
     image?: string | null;
   };
+  likeCount?: number;
+  likedByMe?: boolean;
 }
 
 export interface Goal {

@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Layers, ArrowRight, Lock, Unlock, Target } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { Layers, ArrowRight, Lock, Unlock, Target, Zap } from "lucide-react";
 import { Navbar, BackgroundEffect } from "@/components/shared";
 import { STYLES } from "@/lib/constants";
 import { getCountdown, isUnlocked } from "@/lib/utils";
@@ -40,22 +42,69 @@ const LiveCountdown = ({ date }: { date: string }) => {
 };
 
 export default function ExplorePage() {
+  const { data: session } = useSession();
+  const router = useRouter();
   const [capsules, setCapsules] = useState<Capsule[]>([]);
   const [filter, setFilter] = useState<"latest" | "trending">("latest");
+  const [likingId, setLikingId] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
 
+  // Fetch capsules based on filter
+  const fetchCapsules = async (sortType: "latest" | "trending") => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/capsules?type=public&sort=${sortType}`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setCapsules(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch capsules:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetch("/api/capsules?type=public")
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setCapsules(data);
-        }
-      })
-      .catch((err) => console.error("Failed to fetch capsules:", err))
-      .finally(() => setLoading(false));
-  }, []);
+    fetchCapsules(filter);
+  }, [filter]);
+
+  // Handle like/unlike
+  const handleLike = async (e: React.MouseEvent, capsuleId: string) => {
+    e.preventDefault(); // Prevent navigation
+    e.stopPropagation();
+
+    if (!session?.user) {
+      // Redirect to auth if not logged in
+      router.push("/auth");
+      return;
+    }
+
+    setLikingId(capsuleId);
+
+    try {
+      const res = await fetch(`/api/capsules/${capsuleId}/like`, {
+        method: "POST",
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        // Update local state
+        setCapsules((prev) =>
+          prev.map((cap) =>
+            cap.id === capsuleId
+              ? { ...cap, likeCount: data.likeCount, likedByMe: data.liked }
+              : cap
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Failed to like capsule:", err);
+    } finally {
+      setLikingId(null);
+    }
+  };
 
   return (
     <div
@@ -114,18 +163,38 @@ export default function ExplorePage() {
                   className={`${STYLES.glass} ${STYLES.glassHover} p-10 rounded-[60px] cursor-pointer relative overflow-hidden group`}
                 >
                   <div className="flex justify-between items-start mb-8">
-                    <div
-                      className={`p-4 rounded-3xl shadow-lg ${
-                        isUnlocked(cap.unlockDate)
-                          ? "bg-green-400"
-                          : "bg-yellow-400"
-                      } text-black`}
-                    >
-                      {isUnlocked(cap.unlockDate) ? (
-                        <Unlock size={24} />
-                      ) : (
-                        <Lock size={24} />
-                      )}
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`p-4 rounded-3xl shadow-lg ${
+                          isUnlocked(cap.unlockDate)
+                            ? "bg-green-400"
+                            : "bg-yellow-400"
+                        } text-black`}
+                      >
+                        {isUnlocked(cap.unlockDate) ? (
+                          <Unlock size={24} />
+                        ) : (
+                          <Lock size={24} />
+                        )}
+                      </div>
+                      {/* Electricity/Like Button */}
+                      <button
+                        onClick={(e) => handleLike(e, cap.id)}
+                        disabled={likingId === cap.id}
+                        className={`flex items-center gap-2 px-4 py-3 rounded-2xl border-2 transition-all ${
+                          cap.likedByMe
+                            ? "bg-yellow-400/20 border-yellow-400 text-yellow-400"
+                            : "bg-white/5 border-white/10 text-white/40 hover:border-yellow-400/50 hover:text-yellow-400"
+                        } ${likingId === cap.id ? "opacity-50" : ""}`}
+                      >
+                        <Zap
+                          size={18}
+                          className={cap.likedByMe ? "fill-yellow-400" : ""}
+                        />
+                        <span className="font-black text-sm">
+                          {cap.likeCount || 0}
+                        </span>
+                      </button>
                     </div>
                     <div className="text-right">
                       <span className="block text-[10px] uppercase font-black text-white/30 tracking-widest mb-1">
@@ -153,8 +222,8 @@ export default function ExplorePage() {
                   )}
 
                   <div className="pt-6 border-t border-white/5 flex items-center justify-between">
-                    <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">
-                      @{cap.userId}
+                    <span className="text-[10px] font-black text-white/20 uppercase tracking-widest truncate max-w-[120px]">
+                      @{cap.user?.name || cap.userId.substring(0, 8)}
                     </span>
                     <div className="flex items-center gap-2 text-yellow-400 font-black text-xs uppercase tracking-widest group-hover:gap-4 transition-all">
                       View <ArrowRight size={16} />
@@ -165,7 +234,19 @@ export default function ExplorePage() {
             ))}
           </div>
 
-          {capsules.length === 0 && (
+          {/* Loading State */}
+          {loading && (
+            <div className="text-center py-32">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full mx-auto mb-6"
+              />
+              <p className="text-white/40 text-xl">Loading chronicles...</p>
+            </div>
+          )}
+
+          {!loading && capsules.length === 0 && (
             <div className="text-center py-32">
               <p className="text-white/40 text-xl mb-8">
                 No public capsules yet.
